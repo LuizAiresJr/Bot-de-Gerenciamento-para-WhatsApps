@@ -14,10 +14,16 @@ const path = require ('path');
  } = require ('./comandos/aniversario.js');
 
  const {
-
     comandoSticker
-
  } = require ('./comandos/sticker.js')
+
+ const {
+    comandoRemover
+   } = require ('./comandos/removermembro.js')
+
+   const {
+      comandoAdicionar
+   } = require ('./comandos/adicionar.js')
 
    const client = new Client ({
      authStrategy: new LocalAuth()
@@ -30,7 +36,7 @@ const path = require ('path');
 
    });
 
-   clientlient.on('message', async (message) => {
+   client.on('message', async (message) => {
       const texto = message.body.trim();
       const args = texto.split(' ');
       const comando = args[0].toLowerCase();
@@ -46,6 +52,18 @@ const path = require ('path');
         else if (comando === '!proximoaniversario'){
                 await comandoProximoAniversario(message);
         }
+
+        else if (comando === '!remover') {
+         await comandoRemover(message);
+        }
+
+         else if (comando === '!sticker') {
+               await comandoSticker(message);
+         }
+
+         else if (comando === '!adicionar'){
+            await comandoAdicionar(message);
+         }
 
         //Futuros comandos entraram aqui
 
