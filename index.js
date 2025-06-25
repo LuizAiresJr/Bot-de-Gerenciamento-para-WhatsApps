@@ -3,70 +3,86 @@ const qrcode = require('qrcode-terminal');
 const fs = require ('fs');
 const path = require ('path');
 
-//Trás os comandos 
+//sisteam vai puxar os comandos 
 
  const {
 
-    comandoAniversario,
-    comandoMeuAniversario,
-    comandoProximoAniversario
+      comandoAniversario,
+      comandoMeuAniversario,
+      comandoProximoAniversario
 
- } = require ('./comandos/aniversario.js');
-
- const {
-    comandoSticker
- } = require ('./comandos/sticker.js')
+ } = require ('./src/comandos/aniversario')
 
  const {
-    comandoRemover
-   } = require ('./comandos/removermembro.js')
+
+      comandoRemover
+
+ } = require ('./src/comandos/removermembro');
 
    const {
+
       comandoAdicionar
-   } = require ('./comandos/adicionar.js')
+
+   } = require ('./src/comandos/adicionar');
+
+   const {
+
+      comandoSticker
+
+   } = require ('./src/comandos/sticker');
+
+ const comandos = {
+
+   '!aniversario': comandoAniversario,
+   '!meuaniversario': comandoMeuAniversario,
+   '!proximoaniversario': comandoProximoAniversario,
+   '!remover': comandoRemover,
+   '!sticker': comandoSticker,
+   '!adicionar': comandoAdicionar,
+
+ };
 
    const client = new Client ({
-     authStrategy: new LocalAuth()
+     authStrategy: new LocalAuth(),
+     puppeteer: {
+      headless:true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+     }
    }); 
 
+   process.on('unhandledRejection', (error) => {
+      console.error('Erro não tratado:', error);
+   });
+
    client.on('qr', (qr) => {
+      console.log('📱 Escaneie o QR Code abaixo para logar:');
+      qrcode.generate(qr, { small: true }, function (qrcode) {
+      console.log(qrcode);
+    });
+    
+   });
 
-    console.log('📱 Escaneie o QR Code abaixo para logar:');
-    qrcode.generate(qr, { small: true });
-
+   client.on('ready', () =>{
+      console.log('Freya está online!!!');
    });
 
    client.on('message', async (message) => {
+
+      try {
       const texto = message.body.trim();
       const args = texto.split(' ');
-      const comando = args[0].toLowerCase();
+      const comandoNome = args[0].toLowerCase();
 
-      if (comando === '!aniversario') {
-            await comandoAniversario(message, args);
+      if (comandos[comandoNome]){
+         console.log(`Executando comando: ${comandoNome}`);
+         await comandos[comandoNome](message, args);
+      } 
+   }   catch (error) {
+         console.error(`Erro ao processar o comando:`, error);
       }
-
-      else if (comando === '!meuaniversario'){
-            await comandoMeuAniversario(message);
-      }
-
-        else if (comando === '!proximoaniversario'){
-                await comandoProximoAniversario(message);
-        }
-
-        else if (comando === '!remover') {
-         await comandoRemover(message);
-        }
-
-         else if (comando === '!sticker') {
-               await comandoSticker(message);
-         }
-
-         else if (comando === '!adicionar'){
-            await comandoAdicionar(message);
-         }
-
-        //Futuros comandos entraram aqui
 
    });
 
-   client.initialize();
+   client.initialize().catch(error => {
+    console.error('Falha na inicialização:', error);
+});

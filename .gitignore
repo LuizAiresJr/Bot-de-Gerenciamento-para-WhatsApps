@@ -1,14 +1,13 @@
 # === Dependências e builds ===
-node_modules/ 
+node_modules/
 dist/
 *.exe
 *.bin 
+
 # === Arquivos de ambiente/sensíveis ===
-.env
-.env.local
-.env*.local
+.env*
 config.json
-session.data.json  # Se usar sessões do WhatsApp
+session.data.json
 *.key
 *.pem
 *.cert
@@ -31,7 +30,6 @@ logs/
 Thumbs.db
 desktop.ini
 
-# === Específico para WhatsApp/automação ===
-/temp/
-/media/
-/downloads/
+# === Sessões e cache do WhatsApp ===
+.wwebjs_auth/
+.wwebjs_cache/
