@@ -1,4 +1,10 @@
-async function comandoAdicionar(message) {
+const { isSenderAdmin } = require('../utils/seguranca.js'); 
+
+async function comandoAdicionar(message, args) {
+    const chat = await message.getChat();
+    if (!await isSenderAdmin(chat, message.author)) {
+        return message.reply("❌ Apenas administradores do grupo podem adicionar membros.");
+    }
     try {
         const chat = await message.getChat();
 

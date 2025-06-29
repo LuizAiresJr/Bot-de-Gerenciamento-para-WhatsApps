@@ -1,53 +1,74 @@
-async function comandoRemover(message) {
+const { isSenderAdmin, isTargetAdmin } = require('../utils/seguranca.js');
+
+async function comandoRemover(message, args) {
     try {
-        const chat = await message.getChat(); 
+        const chat = await message.getChat();
 
         if (!chat.isGroup) {
-            return message.reply('Ei chefe essa ordem só pode ser usada nos grupos!!!');
+            return message.reply('Este comando só pode ser usado em grupos!');
         }
 
-        const botId = message.client.info.wid._serialized;
-        const botParticipant = chat.participants.find(p => p.id._serialized === botId);
-
-        if (!botParticipant || !botParticipant.isAdmin) {
-            return message.reply('Pra eu poder chutar ele pra fora eu preciso ser admin, entendeu? 😤');
-        }
-
-        const args = message.body.split(' ');
-        const numero = args[1];
-
-        //Se existir menções, vai remover os mencionados
-        if (message.mentionedIds && message.mentionedIds.length > 0) {
-            for (const id of message.mentionedIds) {
-                try {
-                    await chat.removeParticipants([id]);
-                } catch (err) {
-                    console.log('Erro ao remover membro mencionado:', err);
-                }
-            }
-            
-            return message.reply('Bucha removido com sucesso! 🤭');
+        if (!await isSenderAdmin(chat, message.author)) {
+            return message.reply("❌ Apenas administradores do grupo podem remover membros.");
         }
         
-        //informou um numero, tenta remover com base nele 
-        if (numero){ 
-            const numeroFormatado = numero.replace(/\D/g, '') + '@c.us';
-            const membro = chat.participants.find(p => p.id._serialized === numeroFormatado);   
-
-            if (!membro){
-                return message.reply('Membro não encontrado no grupo!');
-            }
-
-            await chat.removeParticipants([membro.id._serialized]);
-            return message.reply(`Esse buxa ${numero} foi banido!!!`);
+        const botParticipant = chat.participants.find(p => p.id._serialized === message.client.info.wid._serialized);
+        if (!botParticipant || !botParticipant.isAdmin) {
+            return message.reply('Pra eu poder remover alguém, eu também preciso ser admin do grupo! 😤');
         }
 
-        // Se não houver menções e nenhum número, avisa o usuário
-        return message.reply('Digita o numero ou marca alguém depois de escrever o comando, por favor!!!');
+        const numeroParaRemover = args[1];
+        const mencionados = await message.getMentions();
+
+        if (mencionados && mencionados.length > 0) {
+            const removidos = [];
+            const protegidos = [];
+
+            for (const contato of mencionados) {
+                const idMencionado = contato.id._serialized;
+
+                if (await isTargetAdmin(chat, idMencionado)) {
+                    protegidos.push(contato.pushname || idMencionado.split('@')[0]);
+                } else {
+                    await chat.removeParticipants([idMencionado]);
+                    removidos.push(contato.pushname || idMencionado.split('@')[0]);
+                }
+            }
+
+            let resposta = '';
+            if (removidos.length > 0) {
+                resposta += `Buxa(s) removidos(s): ${removidos.join(', ')}.\n`;
+            }
+            if (protegidos.length > 0) {
+                resposta += `Não posso remover: ${protegidos.join(', ')}, pois são administradores.`;
+            }
+            return message.reply(resposta.trim());
+        }
+
+        if (numeroParaRemover) {
+            const idFormatado = numeroParaRemover.replace(/\D/g, '') + '@c.us';
+
+            if (await isTargetAdmin(chat, idFormatado)) {
+                return message.reply(`😠 Não posso remover este número, pois ele pertence a um administrador!`);
+            }
+
+            try {
+                const resultado = await chat.removeParticipants([idFormatado]);
+                if (resultado.status === 200) {
+                    return message.reply(`O buxa ${numeroParaRemover} foi banido!`);
+                } else {
+                    return message.reply(`Não consegui remover ${numeroParaRemover}. Verifique o número ou se ele realmente está no grupo.`);
+                }
+            } catch (err) {
+                return message.reply(`Não encontrei o membro com o número ${numeroParaRemover} no grupo.`);
+            }
+        }
+
+        return message.reply('Para remover, marque um ou mais membros ou digite o número após o comando. Ex: `!remover @membro` ou `!remover 5511...`');
 
     } catch (error) {
         console.error('Erro no comandoRemover:', error);
-        // Não envia mensagem de erro para não poluir o chat
+        message.reply('❌ Ocorreu um erro inesperado ao tentar executar este comando.');
     }
 }
 

@@ -3,7 +3,18 @@ const qrcode = require('qrcode-terminal');
 const fs = require ('fs');
 const path = require ('path');
 
+//Segurança / Firewell pra usar o config 
+
+const config = require ('./config.json');
+const { isGrupoAutorizado} = require ('./src/utils/seguranca.js')
+
 //sisteam vai puxar os comandos 
+
+const {
+
+   comandoPainel
+
+} = require ('./src/comandos/painel.js');
 
  const {
 
@@ -25,14 +36,25 @@ const path = require ('path');
 
    } = require ('./src/comandos/adicionar');
 
+ 
+
    const {
 
       comandoSticker
 
    } = require ('./src/comandos/sticker');
 
+   const {
+
+      comandoPinterest
+
+   } = require ('./src/comandos/pinterest.js');
+
+
  const comandos = {
 
+   '!painel': comandoPainel,
+   '!pinterest': comandoPinterest,
    '!aniversario': comandoAniversario,
    '!meuaniversario': comandoMeuAniversario,
    '!proximoaniversario': comandoProximoAniversario,
@@ -68,6 +90,13 @@ const path = require ('path');
 
    client.on('message', async (message) => {
 
+      console.log(message.from)
+
+            if (!isGrupoAutorizado(message.from) && message.from !== config.dono) {
+         console.log(`Mensagem ignorada do grupo/usuário não autorizado: ${message.from}`);
+         return;
+            }
+
       try {
       const texto = message.body.trim();
       const args = texto.split(' ');
@@ -77,6 +106,8 @@ const path = require ('path');
          console.log(`Executando comando: ${comandoNome}`);
          await comandos[comandoNome](message, args);
       } 
+
+      
    }   catch (error) {
          console.error(`Erro ao processar o comando:`, error);
       }
@@ -86,3 +117,4 @@ const path = require ('path');
    client.initialize().catch(error => {
     console.error('Falha na inicialização:', error);
 });
+
